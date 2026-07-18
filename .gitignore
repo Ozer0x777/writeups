@@ -1,0 +1,20 @@
+# Échantillons réels et artefacts dérivés — jamais de binaire malveillant publié.
+# Les writeups référencent hashes + liens MalwareBazaar/ThreatFox, pas les fichiers eux-mêmes.
+binaries/
+decompiled/
+samples/
+
+# Secrets
+.mb_api_key
+*.env
+
+# Environnement et dépendances locales (réinstallables via les Annexes des writeups)
+tools/venv/
+tools/capa-rules/
+tools/capa-rules.zip
+tools/netreactorslayer/
+tools/netreactorslayer-src/
+
+# Python
+__pycache__/
+*.pyc
