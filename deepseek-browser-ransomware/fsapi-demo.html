@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>File System Access API : démonstration pédagogique (lecture seule)</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 15px/1.5 system-ui, sans-serif; max-width: 820px; margin: 2rem auto; padding: 0 1rem; }
+  h1 { font-size: 1.3rem; }
+  .warn { border: 1px solid #b58900; background: #fdf6e3; color: #073642; padding: .8rem 1rem; border-radius: 6px; }
+  @media (prefers-color-scheme: dark){ .warn { background:#3a2f00; color:#f0e6c0; border-color:#8a6d00; } }
+  button { font: inherit; padding: .5rem .9rem; border-radius: 6px; cursor: pointer; }
+  #tree { white-space: pre; font-family: ui-monospace, monospace; font-size: 13px;
+          border: 1px solid #8883; border-radius: 6px; padding: .8rem; margin-top: 1rem;
+          max-height: 50vh; overflow: auto; }
+  .muted { opacity: .7; }
+  code { background:#8882; padding:0 .3em; border-radius:3px; }
+</style>
+</head>
+<body>
+
+<h1>File System Access API : ce qu'une seule autorisation accorde</h1>
+
+<div class="warn">
+<strong>Démonstration pédagogique, strictement en lecture seule.</strong>
+Cette page <em>énumère</em> et <em>lit</em> les métadonnées d'un dossier que vous choisissez,
+puis affiche l'arborescence. Elle n'écrit rien, ne chiffre rien, n'envoie rien sur le réseau
+(ouvrez l'onglet réseau des devtools pour le vérifier). Choisissez un
+<strong>dossier de test jetable</strong>, pas vos vrais documents.
+</div>
+
+<p>
+Le composant côté victime du malware analysé repose sur l'appel Chromium légitime
+<code>showDirectoryPicker()</code>. L'intérêt de cette démo est de rendre concret un seul point,
+celui qui fait tout le danger : <strong>après un unique clic « Autoriser » sur un dossier, la page
+obtient un accès récursif à tout ce qu'il contient</strong>, sous-dossiers compris, sans nouvelle
+invite. La version malveillante enchaîne ensuite lecture, exfiltration puis réécriture chiffrée
+in-place ; ici on s'arrête à l'énumération pour montrer la primitive sans la reproduire.
+</p>
+
+<p>
+<button id="pick">Choisir un dossier de test et l'énumérer (lecture seule)</button>
+<span id="status" class="muted"></span>
+</p>
+
+<div id="tree" hidden></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const status = msg => { $('status').textContent = msg; };
+
+if (!('showDirectoryPicker' in window)) {
+  status("Votre navigateur n'expose pas showDirectoryPicker() (API limitée à Chromium/Chrome/Edge).");
+  $('pick').disabled = true;
+}
+
+let fileCount = 0, dirCount = 0, byteTotal = 0;
+
+// Parcours récursif : c'est exactement ce qu'un seul octroi de permission rend possible.
+async function walk(dirHandle, prefix, out) {
+  const entries = [];
+  for await (const [name, handle] of dirHandle.entries()) entries.push([name, handle]);
+  entries.sort((a, b) => a[0].localeCompare(b[0]));
+
+  for (const [name, handle] of entries) {
+    if (handle.kind === 'directory') {
+      dirCount++;
+      out.push(prefix + '📁 ' + name + '/');
+      await walk(handle, prefix + '   ', out);   // descente récursive, aucune ré-autorisation
+    } else {
+      fileCount++;
+      let size = 0;
+      try { size = (await handle.getFile()).size; byteTotal += size; } catch {}
+      out.push(prefix + '📄 ' + name + '  (' + size.toLocaleString('fr') + ' o)');
+    }
+  }
+}
+
+$('pick').addEventListener('click', async () => {
+  let dirHandle;
+  try {
+    dirHandle = await window.showDirectoryPicker({ mode: 'read' }); // 'read' : on se prive volontairement de l'écriture
+  } catch (e) {
+    status('Sélection annulée.');
+    return;
+  }
+  fileCount = dirCount = byteTotal = 0;
+  status('Énumération…');
+  const out = [dirHandle.name + '/ (racine autorisée)'];
+  await walk(dirHandle, '   ', out);
+  out.push('');
+  out.push(`Total : ${fileCount} fichiers, ${dirCount} sous-dossiers, ${byteTotal.toLocaleString('fr')} octets lisibles ` +
+           `après un seul octroi de permission.`);
+  $('tree').hidden = false;
+  $('tree').textContent = out.join('\n');
+  status('Terminé (rien n\'a été modifié ni envoyé).');
+});
+</script>
+
+<h2 style="font-size:1.05rem">Pourquoi c'est le point clé</h2>
+<ul>
+  <li>La permission est accordée <strong>au dossier entier</strong>, pas fichier par fichier. Le parcours
+      récursif ci-dessus ne redéclenche aucune invite.</li>
+  <li>Aucun binaire natif, aucune faille : c'est une capacité <em>documentée et voulue</em> de la plateforme,
+      détournée par l'ingénierie sociale du leurre (« upscaler d'avatar »).</li>
+  <li>Défense côté utilisateur : ne jamais accorder l'accès dossier à une page dont ce n'est pas la fonction
+      évidente et attendue ; préférer un sous-dossier vide en cas de doute. Défense plateforme : les invites
+      Chromium affichent le nom du dossier et exigent un geste explicite, d'où l'importance de le lire.</li>
+</ul>
+
+</body>
+</html>
