@@ -5,7 +5,7 @@
 **Type :** Analyse statique uniquement (aucune exécution des samples, aucun chargement des drivers)
 **Famille :** Non nommée officiellement, identifiée ici par son nom de fichier et ses chaînes internes (`WskMon`)
 
-> Ce document regroupe l'analyse technique complète de `wskmon.sys` et des deux autres outils retrouvés signés avec le même certificat (`devhost.sys`, `844ljfpvz.sys`). Le [signalement MSRC](02-wskmon-msrc-report.md) (lettre de divulgation destinée à Microsoft) et le [PoC de déclenchement](poc_trigger.py) restent des documents séparés, ce ne sont pas de la prose d'analyse mais des livrables distincts.
+> Ce document regroupe l'analyse technique complète de `wskmon.sys` et des deux autres outils retrouvés signés avec le même certificat (`devhost.sys`, `844ljfpvz.sys`). Le [PoC de déclenchement](poc_trigger.py) reste un document séparé, ce n'est pas de la prose d'analyse mais un livrable distinct.
 
 ## 1. Contexte
 
@@ -293,7 +293,6 @@ Certificat WHQL valide (Aolian, probablement compromis)
 
 ## 19. Documents associés et divulgation
 
-- [`02-wskmon-msrc-report.md`](02-wskmon-msrc-report.md), signalement destiné au Microsoft Security Response Center : révocation du certificat, enquête sur le compte de soumission, preuve de réutilisation sur les trois fichiers.
-- [`poc_trigger.py`](poc_trigger.py), générateur de paquet de déclenchement (magic bytes + HMAC-SHA256 + XOR), reconstruit entièrement depuis le désassemblage, preuve d'exploitabilité pour le rapport MSRC. N'envoie rien par défaut ; nécessite une cible explicite + confirmation manuelle.
+- [`poc_trigger.py`](poc_trigger.py), générateur de paquet de déclenchement (magic bytes + HMAC-SHA256 + XOR), reconstruit entièrement depuis le désassemblage, preuve d'exploitabilité pour le signalement fait au Microsoft Security Response Center. N'envoie rien par défaut ; nécessite une cible explicite + confirmation manuelle.
 
-**Note sur la divulgation.** Le certificat documenté ici est **actif** au moment de cette analyse. Par cohérence avec les pratiques de divulgation coordonnée (signaler au vendeur avant publication large), ce dossier reste privé jusqu'à confirmation de la révocation par Microsoft ou un délai raisonnable sans réponse. La société dont le nom apparaît dans le certificat (Aolian) est très vraisemblablement une victime dans cette histoire (§3) et n'a pas vocation à être présentée publiquement comme responsable sans confirmation.
+**Note sur la divulgation.** Un signalement a été fait au Microsoft Security Response Center avant publication de cette analyse, conformément aux pratiques de divulgation coordonnée. La société dont le nom apparaît dans le certificat (Aolian) est très vraisemblablement une victime dans cette histoire (§3), pas complice.

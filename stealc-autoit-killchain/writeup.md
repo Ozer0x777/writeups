@@ -2,7 +2,7 @@
 
 **Analyste :** Gordon PEIRS
 **Date d'analyse :** 13/07/2026
-**Type :** Analyse statique uniquement (aucune exécution du binaire par l'auteur) — voir la note de méthode en §8 pour la seule étape reposant sur l'exécution d'un tiers.
+**Type :** Analyse statique uniquement (aucune exécution du binaire par l'auteur) : voir la note de méthode en §8 pour la seule étape reposant sur l'exécution d'un tiers.
 **Famille :** StealC (infostealer, MaaS)
 
 > Ce document regroupe l'intégralité du récit analytique (constats, hypothèses, conclusions) des quatre volets de l'enquête. La **preuve de travail reproductible** (commande / pourquoi / sortie brute) vit séparément dans [`runbook.md`](runbook.md), organisé selon les mêmes quatre parties. Les scripts autonomes sont dans [`tools/`](tools/).
@@ -37,7 +37,7 @@ Précision apportée après coup (voir §6.4) : cet imphash s'est révélé part
 - `cabextract`, pour l'extraction d'archive CAB embarquée
 - [`autoit-ripper`](https://github.com/nazywam/AutoIt-Ripper), pour la décompilation de bytecode AutoIt compilé (`.a3x`)
 
-Tout le travail a été réalisé en local, sans exécution du binaire (pas d'environnement sandbox isolé disponible pour cette session, donc analyse strictement statique).
+Tout le travail a été réalisé en local, sans exécution du binaire (pas d'environnement sandbox isolé disponible, donc analyse strictement statique).
 
 ## 4. Le stub IExpress : analyse statique
 
@@ -59,7 +59,7 @@ Tout le travail a été réalisé en local, sans exécution du binaire (pas d'en
 
 - **Imports notables** : `Cabinet.dll` (4 fonctions), un indice fort d'une extraction de CAB au runtime, cohérent avec l'hypothèse ci-dessus.
 
-### 4.2 Capa — capacités détectées
+### 4.2 Capa : capacités détectées
 
 Capa classe directement le binaire comme **installeur** (`(internal) installer file limitation`), avec 47 capacités remontées, dont les plus significatives :
 
@@ -73,7 +73,7 @@ Capa classe directement le binaire comme **installeur** (`(internal) installer f
 
 **Floss** ne remonte quasiment aucune chaîne cachée/décodée dans le code du stub lui-même (`--no static`), ce qui confirme que la logique réelle n'est pas dans ce binaire mais dans la ressource packée.
 
-### 4.4 Extraction de la ressource — CAB puis AutoIt
+### 4.4 Extraction de la ressource : CAB puis AutoIt
 
 Parsing des ressources PE (`pefile`) : la ressource de type **10 (RCDATA)**, taille **1 979 115 octets**, commence par la signature `MSCF` (Microsoft Cabinet File).
 
@@ -279,7 +279,7 @@ Note d'honnêteté : `$YEN_SHERIFF` n'est assigné qu'à ces deux lignes (confir
 
 À part cet inventaire, deux vérifications supplémentaires, non liées à un AV précis, ont aussi été localisées :
 
-- **Kill switch anti-VM/sandbox immédiat** : `If ProcessExists("vmtoolsd.exe") Or ProcessExists("VboxTray.exe") Or ProcessExists("SandboxieRpcSs.exe") Then Exit`. Détection explicite de VMware Tools, VirtualBox Guest Additions et Sandboxie, avec sortie immédiate du script si l'un des trois est présent. (La chaîne exacte présente dans l'échantillon est `VboxTray.exe` — `ProcessExists` étant insensible à la casse, cela cible bien le vrai process `VBoxTray.exe` de VirtualBox.)
+- **Kill switch anti-VM/sandbox immédiat** : `If ProcessExists("vmtoolsd.exe") Or ProcessExists("VboxTray.exe") Or ProcessExists("SandboxieRpcSs.exe") Then Exit`. Détection explicite de VMware Tools, VirtualBox Guest Additions et Sandboxie, avec sortie immédiate du script si l'un des trois est présent. (La chaîne exacte présente dans l'échantillon est `VboxTray.exe` ; `ProcessExists` étant insensible à la casse, cela cible bien le vrai process `VBoxTray.exe` de VirtualBox.)
 - **Préparation d'un spoofing de PPID ciblant `explorer.exe`** : un handle est ouvert sur le process `explorer.exe` via `OpenProcess`, cohérent avec l'utilisation observée en §6.1 de `InitializeProcThreadAttributeList`/`UpdateProcThreadAttribute` pour faire apparaître le process injecté comme un enfant d'`explorer.exe` plutôt que du loader réel. Ce qui n'était qu'une hypothèse en §6.1 ("cohérent avec du spoofing de PPID") est maintenant rattaché à une cible concrète.
 
 ### 7.4 Détection de sandbox par altération du Sleep
@@ -293,7 +293,7 @@ La fonction `LOPEZFUNDING($ms)`, appelée dans plusieurs des branches ci-dessus,
 
 C'est la technique standard pour détecter un `Sleep` intercepté ou accéléré par un environnement d'analyse automatisé, qui patche souvent cette fonction pour raccourcir artificiellement les délais. Les durées utilisées ici : **20 secondes** si Avast est détecté, **160 secondes** si Bitdefender est détecté.
 
-Note technique sur le calcul de ces durées. Les arguments passés à `LOPEZFUNDING` sont eux aussi obfusqués avec la même astuce de grandes constantes. Pour la durée Bitdefender, l'argument est `794769 + 4294332527`. La règle de réinterprétation appliquée par `deobfuscate.py`/`validate_crossref.py` re-signe **chaque littéral individuellement** s'il tombe dans `[2^31, 2^32[` (ou `[2^63, 2^64[`) : `4294332527` est lui-même dans cette plage → `4294332527 - 2^32 = -634769`, d'où `794769 - 634769 = 160000` ms, soit 160 s. Le même résultat s'obtient en sommant d'abord puis en re-signant modulo 2^32 (`(794769 + 4294332527) mod 2^32 = 160000`) — c'est d'ailleurs la forme utilisée dans le snippet du runbook. **Piège à éviter** : appliquer le test de plage à la *somme* brute (`4295127296`) échouerait, car elle dépasse `2^32` et sort de l'intervalle ; il faut re-signer soit chaque littéral avant l'addition, soit la somme via un modulo 2^32. La première évaluation, faite en appliquant naïvement le test de plage à la somme, avait produit un résultat faux ; corrigé.
+Note technique sur le calcul de ces durées. Les arguments passés à `LOPEZFUNDING` sont eux aussi obfusqués avec la même astuce de grandes constantes. Pour la durée Bitdefender, l'argument est `794769 + 4294332527`. La règle de réinterprétation appliquée par `deobfuscate.py`/`validate_crossref.py` re-signe **chaque littéral individuellement** s'il tombe dans `[2^31, 2^32[` (ou `[2^63, 2^64[`) : `4294332527` est lui-même dans cette plage → `4294332527 - 2^32 = -634769`, d'où `794769 - 634769 = 160000` ms, soit 160 s. Le même résultat s'obtient en sommant d'abord puis en re-signant modulo 2^32 (`(794769 + 4294332527) mod 2^32 = 160000`), c'est d'ailleurs la forme utilisée dans le snippet du runbook. **Piège à éviter** : appliquer le test de plage à la *somme* brute (`4295127296`) échouerait, car elle dépasse `2^32` et sort de l'intervalle ; il faut re-signer soit chaque littéral avant l'addition, soit la somme via un modulo 2^32. La première évaluation, faite en appliquant naïvement le test de plage à la somme, avait produit un résultat faux ; corrigé.
 
 ### 7.5 Gestion explicite des deux architectures (CONTEXT x86/x64)
 
@@ -310,7 +310,7 @@ EndSwitch
 
 `0x10007` et `0x100007` sont les valeurs `CONTEXT_FULL` respectivement pour la structure `CONTEXT` x86 et x64 de Windows. Juste avant ce `Switch`, un `If`/`Else` construit la structure `$FORMULATEMPLELIVE` (utilisée ensuite dans `GetThreadContext`/`NtSetContextThread`, voir §6.1) à partir de trois chaînes déchiffrées dans la branche 64-bit, et de deux seulement dans la branche 32-bit. Le loader gère donc explicitement les deux architectures pour l'étape de détournement du contexte de thread, plutôt que de supposer une seule architecture cible.
 
-(Sur le point d'outillage : ces 3 blocs étaient un artefact de la fenêtre de recherche du script de validation, trop courte de quelques lignes — voir §10, pas une vraie ambiguïté du malware.)
+(Sur le point d'outillage : ces 3 blocs étaient un artefact de la fenêtre de recherche du script de validation, trop courte de quelques lignes (voir §10), pas une vraie ambiguïté du malware.)
 
 ---
 
@@ -406,7 +406,7 @@ Ce n'est pas seulement un loader qui injecte un payload : c'est un loader qui ad
 - **Validation croisée des `Switch`.** Sur 354 blocs, 351 sont résolus indépendamment par les deux méthodes croisées (arithmétique vs présence d'`ExitLoop`/`Return`) avec un accord de 100%. Les 3 blocs restants n'ont qu'un seul des deux signaux disponibles (petites tables de correspondance sans `ExitLoop`, un cas de figure attendu, pas une anomalie), et ont été relus et confirmés à la main un par un ; l'un d'eux est détaillé en §7.5. `deobfuscate.py` résout finalement les 354 blocs sans laisser aucune branche ambiguë dans `deobfuscated.au3`. Une version antérieure indiquait par erreur 2 blocs non résolus : c'était une limite de la fenêtre de recherche du script de validation (5 lignes en arrière, alors que l'assignation réelle se trouvait parfois ~6 lignes plus haut, à cheval sur un `If`/`Else`) ; fenêtre élargie à 60 lignes dans `deobfuscate.py` et `validate_crossref.py`, corrigé.
 - **Payload final non observé.** L'analyse reste 100% statique jusqu'à la §8 : le payload réellement injecté (post-hollowing) n'est jamais présent en clair dans ce binaire (cohérent avec le design du loader). Le déroulement de la création de process, la structure `PROCESS_INFORMATION` et la chaîne `NtOpenSection`/`NtMapViewOfSection`/`NtWriteVirtualMemory` sont en revanche tracés statiquement de bout en bout (§6.1), pas juste déduits de l'ordre d'apparition des appels.
 - **Attribution du crypter.** L'identification comme **Asgard Protector** repose sur une correspondance technique solide avec une source publique indépendante (§6.4), pas sur une comparaison bit à bit avec un échantillon de référence identique. La détection anti-sandbox par ping DNS décrite par cette source n'a pas été retrouvée dans notre échantillon.
-- **Confirmation finale via un tiers.** Le payload et sa config C2 sont confirmés par l'exécution qu'un tiers (Triage) a faite du sample, recoupée par ThreatFox et un scan passif Shodan — jamais par une exécution ou une connexion réalisée par l'auteur.
+- **Confirmation finale via un tiers.** Le payload et sa config C2 sont confirmés par l'exécution qu'un tiers (Triage) a faite du sample, recoupée par ThreatFox et un scan passif Shodan, jamais par une exécution ou une connexion réalisée par l'auteur.
 
 ## 11. IOCs consolidés
 
@@ -432,9 +432,9 @@ Ce n'est pas seulement un loader qui injecte un payload : c'est un loader qui ad
 
 Le log détaillé (commande / pourquoi / sortie brute / ce qu'on en retient) de chacune des quatre parties est dans [`runbook.md`](runbook.md), qui couvre :
 
-- [Partie 1 — extraction du stub IExpress et du loader AutoIt](runbook.md#partie-1--extraction-du-stub-iexpress-et-du-loader-autoit) (§1–4 ci-dessus)
-- [Partie 2 — déobfuscation](runbook.md#partie-2--déobfuscation-du-loader-autoit-quotesa3x) (§5–6), dont la [validation croisée des `Switch`](runbook.md#validation-croisée-de-la-résolution-des-switch) et l'[identification du crypter par imphash](runbook.md#identification-du-crypter-par-recherche-dimphash)
-- [Partie 3 — persistance et évasion anti-AV](runbook.md#partie-3--persistance-et-évasion-anti-av-du-loader-autoit) (§7)
-- [Partie 4 — confirmation externe](runbook.md#partie-4--confirmation-externe-et-infrastructure-de-campagne) (§8)
+- [Partie 1 : extraction du stub IExpress et du loader AutoIt](runbook.md#partie-1--extraction-du-stub-iexpress-et-du-loader-autoit) (§1–4 ci-dessus)
+- [Partie 2 : déobfuscation](runbook.md#partie-2--déobfuscation-du-loader-autoit-quotesa3x) (§5–6), dont la [validation croisée des `Switch`](runbook.md#validation-croisée-de-la-résolution-des-switch) et l'[identification du crypter par imphash](runbook.md#identification-du-crypter-par-recherche-dimphash)
+- [Partie 3 : persistance et évasion anti-AV](runbook.md#partie-3--persistance-et-évasion-anti-av-du-loader-autoit) (§7)
+- [Partie 4 : confirmation externe](runbook.md#partie-4--confirmation-externe-et-infrastructure-de-campagne) (§8)
 
 Prérequis et séquence complète pour rejouer de zéro : voir [reproductibilité de bout en bout](runbook.md#reproductibilité-de-bout-en-bout).

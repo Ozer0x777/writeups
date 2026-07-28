@@ -1,6 +1,6 @@
 # Guide de détection et remédiation : wskmon.sys (backdoor kernel WFP, signé WHQL)
 
-Destiné à quelqu'un qui doit vérifier ou nettoyer un système Windows, pas à un public d'analystes. Basé sur les constats de [`writeup.md`](writeup.md) et du rapport MSRC [`02-wskmon-msrc-report.md`](02-wskmon-msrc-report.md).
+Destiné à quelqu'un qui doit vérifier ou nettoyer un système Windows, pas à un public d'analystes. Basé sur les constats de [`writeup.md`](writeup.md).
 
 ## 1. Suis-je concerné ?
 
@@ -68,7 +68,7 @@ Le backdoor étant passif, il est impossible sans logs réseau de déterminer si
 
 ## 5. Signalement et réduction de surface
 
-- **Signalement Microsoft MSRC** : voir [`02-wskmon-msrc-report.md`](02-wskmon-msrc-report.md) -- le certificat WHQL (serial `330000013c4a61fb3578d2b6dd00000000013c`) doit être révoqué par Microsoft pour neutraliser les trois samples de la famille
+- **Signalement Microsoft MSRC** : fait avant publication de cette analyse -- le certificat WHQL (serial `330000013c4a61fb3578d2b6dd00000000013c`) doit être révoqué par Microsoft pour neutraliser les trois samples de la famille
 - Soumettre les trois hashes à ThreatFox sous les tags `rootkit` et `byovd` :
   - `wskmon.sys` : `495c7e5513fa7766c236e76d8520139139fc4ad7203ddcb2ccdae17bdb691979`
   - `devhost.sys` : `ee8844ffd3879190fb389b0f613cb2dcdcd83375cf0a6994170a648c5ca8c479`

@@ -1,4 +1,4 @@
-# Remediation — Lazarus githook (DEV#POPPER)
+# Remediation : Lazarus githook (DEV#POPPER)
 
 ## Indicateurs de compromission (IoCs)
 
@@ -8,8 +8,8 @@
 |---|---|
 | `144.172.103.226` | Serveur de staging (stage 0 → 1), HTTP |
 | `95.217.102.138:1144` | C2 stage 2, chemin `/s/30620700`, HTTP |
-| `95.216.64.240:1224` | C2 Python HTTP — beacon `/keys`, uploads, commandes `/brow/*` |
-| `69.197.164.135:2245` | C2 RAT TCP brute — canal de contrôle interactif persistant |
+| `95.216.64.240:1224` | C2 Python HTTP : beacon `/keys`, uploads, commandes `/brow/*` |
+| `69.197.164.135:2245` | C2 RAT TCP brute : canal de contrôle interactif persistant |
 | `pub-acf013a9b65140b7b58cc3c104ee7105.r2.dev` | CDN Cloudflare R2 (payload Windows `p.zip`) |
 | `pub-06714264305c44ea94491c0c8d961a87.r2.dev` | CDN Cloudflare R2 (payload Linux `plinux.tar.xz`, macOS `pmac.tar.gz`) |
 | `ip-api.com` | Géolocalisation passive (appelé par le backdoor comms) |
@@ -165,7 +165,7 @@ Remove-Item "C:\chemin\projet\.git\hooks\pre-commit" -ErrorAction SilentlyContin
 
 1. **Rotation des identifiants navigateur** : si le module comms ou le stealer a tourné, tous les navigateurs ciblés sont compromis (Chrome, Brave, Opera, Edge, Yandex). Mots de passe et **numéros de carte bancaire** exfiltrés via `credit_cards` SQLite.
 
-1b. **Rotation des wallets crypto** : stage 1 JS cible 22 extensions Chrome dont MetaMask, Phantom (Solana) et Binance Chain Wallet — toutes les données `Local Extension Settings` sont exfiltrées vers `95.216.64.240:1224/uploads`. Le keypair Solana CLI (`~/.config/solana/id.json`) et le wallet Exodus sont également ciblés. Si ces wallets étaient présents sur le système compromis, considérer les clés privées comme exposées et transférer les fonds sur de nouvelles adresses générées sur un système propre. Supprimer `~/.n3/` si présent.
+1b. **Rotation des wallets crypto** : stage 1 JS cible 22 extensions Chrome dont MetaMask, Phantom (Solana) et Binance Chain Wallet : toutes les données `Local Extension Settings` sont exfiltrées vers `95.216.64.240:1224/uploads`. Le keypair Solana CLI (`~/.config/solana/id.json`) et le wallet Exodus sont également ciblés. Si ces wallets étaient présents sur le système compromis, considérer les clés privées comme exposées et transférer les fonds sur de nouvelles adresses générées sur un système propre. Supprimer `~/.n3/` si présent.
 
 2. **Rotation des tokens d'API** : tous les fichiers `.env` du système ont pu être uploadés (`ssh_env`, code 8). GitHub, npm, AWS, GCP, tout token en clair dans un `.env` est à invalider.
 

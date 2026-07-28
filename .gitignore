@@ -1,8 +1,19 @@
 # Échantillons réels et artefacts dérivés — jamais de binaire malveillant publié.
 # Les writeups référencent hashes + liens MalwareBazaar/ThreatFox, pas les fichiers eux-mêmes.
 binaries/
+binaries_full_corpus/
 decompiled/
 samples/
+*_ghidra/
+*.gpr
+*.exe
+*.dll
+*.sys
+*.elf
+*.bin
+*.apk
+*.dex
+*.zip
 
 # Secrets
 .mb_api_key

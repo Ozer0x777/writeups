@@ -1,12 +1,12 @@
-# Runbook — reproduction pas à pas (Parties 1 à 4)
+# Runbook : reproduction pas à pas (Parties 1 à 4)
 
-Ce fichier regroupe les logs de manipulation (commande / pourquoi / retour brut / ce qu'on en retient) des quatre parties de l'enquête AgentTesla, dans l'ordre chronologique. Les parties `0X-*.md` restent le récit analytique ; ce fichier est la preuve de travail et le mode d'emploi pour rejouer chaque étape.
+Ce fichier regroupe les logs de manipulation (commande / pourquoi / retour brut / ce qu'on en retient) des quatre parties de l'enquête AgentTesla, dans l'ordre chronologique. `writeup.md` reste le récit analytique ; ce fichier est la preuve de travail et le mode d'emploi pour rejouer chaque étape.
 
 Prérequis : `pefile`, `capa`+règles, `ilspycmd` (`dotnet tool install -g ilspycmd`), `.NET SDK` 10.0, `pycryptodome`, une clé API MalwareBazaar (voir [`../stealc-autoit-killchain/runbook.md`](../stealc-autoit-killchain/runbook.md) pour l'installation de la base commune, déjà en place pour cette analyse).
 
 ---
 
-## Partie 1 — Loader stage 1
+## Partie 1 : Loader stage 1
 
 ### 1. Recherche d'un candidat .NET récent taggé ConfuserEX
 
@@ -17,7 +17,7 @@ curl -s -X POST https://mb-api.abuse.ch/api/v1/ -H "Auth-Key: ****" -d "query=ge
 
 **Pourquoi :** valider qu'il existe des échantillons AgentTesla récents avec ce tag communautaire avant de creuser plus loin.
 
-**Retour :** seulement 3 résultats au total pour ce tag précis, le plus récent datant de 2025-07-29 — pas assez récent ni assez représentatif pour servir de base de recherche.
+**Retour :** seulement 3 résultats au total pour ce tag précis, le plus récent datant de 2025-07-29 : pas assez récent ni assez représentatif pour servir de base de recherche.
 
 **Ce qu'on en retient :** élargir la recherche directement par signature `AgentTesla` plutôt que par tag de protecteur, et filtrer ensuite sur les vrais binaires `.NET/CIL`.
 
@@ -31,7 +31,7 @@ rows = [r for r in rows if any('.NET' in t or 'MSIL' in t or 'CIL' in t for t in
 rows.sort(key=lambda r: r['first_seen'], reverse=True)
 ```
 
-**Pourquoi :** la majorité du flux du jour est constituée de scripts `.js`/`.vbs` de première étape (droppers), pas des binaires .NET compilés eux-mêmes — filtrer pour ne garder que les vrais CIL.
+**Pourquoi :** la majorité du flux du jour est constituée de scripts `.js`/`.vbs` de première étape (droppers), pas des binaires .NET compilés eux-mêmes : filtrer pour ne garder que les vrais CIL.
 
 **Retour :** plusieurs candidats du 14/07/2026, dont `CTM.exe` (1 320 960 octets) et `RFQ013072026,PDF.exe` (993 792 octets), tous deux avec une bonne couverture sandbox tierce (CAPE, ANY.RUN, Triage, VMRay, UnpacMe).
 
@@ -61,7 +61,7 @@ capa -r tools/capa-rules --signatures <floss-sigs> -j CTM.exe > capa_out.json
 
 **Retour :** 12 capacités, dont `compiled to the .NET platform`, `access .NET resource`, `decrypt data using AES via .NET`, `invoke .NET assembly method`.
 
-**Ce qu'on en retient :** hypothèse initiale — loader .NET, ressource + AES + réflexion.
+**Ce qu'on en retient :** hypothèse initiale : loader .NET, ressource + AES + réflexion.
 
 ### 5. Décompilation ilspycmd
 
@@ -152,11 +152,11 @@ curl -s -X POST https://mb-api.abuse.ch/api/v1/ -H "Auth-Key: ****" -d "query=ge
 
 **Retour :** `{"query_status": "hash_not_found"}`.
 
-**Ce qu'on en retient :** stage 2 non indexé publiquement au moment de l'analyse — aucun rapport tiers à croiser à ce stade.
+**Ce qu'on en retient :** stage 2 non indexé publiquement au moment de l'analyse : aucun rapport tiers à croiser à ce stade.
 
 ---
 
-## Partie 2 — Identification du protecteur et control-flow flattening
+## Partie 2 : Identification du protecteur et control-flow flattening
 
 ### 1. Décompilation stage 2 et repérage du protecteur
 
@@ -168,7 +168,7 @@ grep -n "protected by an unregistered version" decompiled_stage2/*.cs
 
 **Retour :** chaîne de licence trial Eziriz .NET Reactor trouvée en clair dans un `case` du dispatcher.
 
-**Ce qu'on en retient :** protecteur identifié avec certitude — correction de l'hypothèse ConfuserEx non vérifiée de la Partie 1.
+**Ce qu'on en retient :** protecteur identifié avec certitude : correction de l'hypothèse ConfuserEx non vérifiée de la Partie 1.
 
 ### 2. Mesure de l'ampleur du control-flow flattening
 
@@ -180,7 +180,7 @@ grep -c "case [0-9]\+:" decompiled_stage2/*.cs
 
 **Retour :** 142 `switch` (dont 79 avec ≥5 cases, les vrais dispatchers), 1 891 `case` au total ; le plus gros bloc (ligne 8965) fait 747 cases sur 4 621 lignes.
 
-**Ce qu'on en retient :** ampleur nettement supérieure à AsgardProtector/StealC (354 blocs, ~1 branche réelle chacun) — nécessite un outil dédié adapté à un vrai graphe de contrôle, pas juste "trouver la bonne constante".
+**Ce qu'on en retient :** ampleur nettement supérieure à AsgardProtector/StealC (354 blocs, ~1 branche réelle chacun) : nécessite un outil dédié adapté à un vrai graphe de contrôle, pas juste "trouver la bonne constante".
 
 ### 3. Construction et débogage de `deflatten_cs.py`
 
@@ -201,7 +201,7 @@ case [0]: default=('EXIT','throw') branch=[] TERMINAL
 ```
 Correspond exactement à la source relue à la main.
 
-**Ce qu'on en retient :** ne jamais faire confiance à "0 non-résolu" sans vérification manuelle indépendante — la métrique peut être fausse par omission plutôt que par erreur de calcul.
+**Ce qu'on en retient :** ne jamais faire confiance à "0 non-résolu" sans vérification manuelle indépendante : la métrique peut être fausse par omission plutôt que par erreur de calcul.
 
 ### 4. Construction et débogage de `linearize_cs.py`
 
@@ -224,7 +224,7 @@ point d'entree detecte: etat 299
 Etats atteints depuis l'entree: 415/673
 ```
 
-**Ce qu'on en retient :** une fenêtre fixe qui a fonctionné sur un projet (StealC) ne se transpose pas automatiquement à un autre — vérifier la distance réelle plutôt que réutiliser une constante par habitude.
+**Ce qu'on en retient :** une fenêtre fixe qui a fonctionné sur un projet (StealC) ne se transpose pas automatiquement à un autre : vérifier la distance réelle plutôt que réutiliser une constante par habitude.
 
 ### 5. Traçage de la séquence d'API avec arguments réels
 
@@ -262,13 +262,13 @@ for rt in pe.DIRECTORY_ENTRY_RESOURCE.entries:
     print(rt.name if rt.name else rt.struct.Id, [...])
 ```
 
-**Retour :** seules des ressources `RT_ICON`(3)/`RT_GROUP_ICON`(14)/`RT_VERSION`(16) présentes dans les deux binaires — aucune `RT_RCDATA`(10) nommée `"__"`.
+**Retour :** seules des ressources `RT_ICON`(3)/`RT_GROUP_ICON`(14)/`RT_VERSION`(16) présentes dans les deux binaires : aucune `RT_RCDATA`(10) nommée `"__"`.
 
-**Ce qu'on en retient :** la séquence d'auto-injection tracée n'est jamais empruntée sur cet échantillon — corrigé avant d'être présenté comme le comportement réel. Le vrai chemin part ailleurs (Partie 3).
+**Ce qu'on en retient :** la séquence d'auto-injection tracée n'est jamais empruntée sur cet échantillon : corrigé avant d'être présenté comme le comportement réel. Le vrai chemin part ailleurs (Partie 3).
 
 ---
 
-## Partie 3 — Vrai chemin et tentatives d'outillage
+## Partie 3 : Vrai chemin et tentatives d'outillage
 
 ### 1. Traçage du vrai chemin (état 28)
 
@@ -323,7 +323,7 @@ file ObjectRequester.ScopeObject ScheduledObject.ObjectParser DecryptorCompresso
 
 **Retour :** confirmation que .NET Reactor stocke son bytecode de VM et ses métadonnées de protection directement dans des ressources d'assembly (source : deepwiki.com/void-stack/VMAttack).
 
-**Ce qu'on en retient :** le mécanisme tracé est probablement générique au protecteur, pas spécifique au malware — pivot vers un outil spécialisé plutôt que de continuer à la main.
+**Ce qu'on en retient :** le mécanisme tracé est probablement générique au protecteur, pas spécifique au malware : pivot vers un outil spécialisé plutôt que de continuer à la main.
 
 ### 5. Première tentative NETReactorSlayer (binaire officiel)
 
@@ -359,9 +359,9 @@ dotnet build NETReactorSlayer.CLI/NETReactorSlayer.CLI.csproj -c Release -f net6
 DOTNET_ROLL_FORWARD=LatestMajor dotnet bin/Release/net6.0/NETReactorSlayer.CLI.dll stage2.dll --no-pause True
 ```
 
-**Retour :** commit `"Improve resource decrypter. Resolve #54"` daté du 15/12/2022, 3 jours après la release v6.4.0.0 testée à l'étape précédente — jamais publié dans un binaire. Compilation réussie (avertissements EOL sur les cibles net6.0/netcoreapp3.1, ignorables), exécution réussie via roll-forward vers le runtime .NET 10 installé. **Même erreur exacte malgré le correctif.**
+**Retour :** commit `"Improve resource decrypter. Resolve #54"` daté du 15/12/2022, 3 jours après la release v6.4.0.0 testée à l'étape précédente, jamais publié dans un binaire. Compilation réussie (avertissements EOL sur les cibles net6.0/netcoreapp3.1, ignorables), exécution réussie via roll-forward vers le runtime .NET 10 installé. **Même erreur exacte malgré le correctif.**
 
-**Ce qu'on en retient :** le correctif de 2022 ne couvre pas ce cas précis — creuser plus loin dans le code source plutôt que supposer que "la dernière version" suffit.
+**Ce qu'on en retient :** le correctif de 2022 ne couvre pas ce cas précis : creuser plus loin dans le code source plutôt que supposer que "la dernière version" suffit.
 
 ### 7. Diagnostic par lecture du code source
 
@@ -372,11 +372,11 @@ cat NETReactorSlayer.Core/Stages/ResourceResolver.cs
 
 **Retour :** le stage cible spécifiquement un pattern "assembly-en-ressource chargé via `AppDomain.AssemblyResolve`" (recherche d'une méthode de signature `(object, ResolveEventArgs)`), différent du mécanisme réellement utilisé par ce sample (`GetManifestResourceStream` direct depuis le code flattened).
 
-**Ce qu'on en retient :** ce n'est pas un bug à corriger, c'est un outil qui répond à un mécanisme différent de .NET Reactor — conclusion honnête plutôt que de continuer à chercher un correctif qui n'existe pas pour ce cas.
+**Ce qu'on en retient :** ce n'est pas un bug à corriger, c'est un outil qui répond à un mécanisme différent de .NET Reactor : conclusion honnête plutôt que de continuer à chercher un correctif qui n'existe pas pour ce cas.
 
 ---
 
-## Partie 4 — Confirmation externe
+## Partie 4 : Confirmation externe
 
 ### 1. Lecture complète du vendor_intel MalwareBazaar
 
@@ -402,9 +402,9 @@ curl -s -X POST https://mb-api.abuse.ch/api/v1/ -H "Auth-Key: ****" -d "query=ge
 https://tria.ge/reports/260714-kt4y4scs2z/
 ```
 
-**Retour :** config extraite — exfiltration FTP vers `ftp.piovau.com:21`, identifiants en clair dans le rapport ; comportements : accès profils Outlook, consultation IP externe, usage de `SetThreadContext`.
+**Retour :** config extraite : exfiltration FTP vers `ftp.piovau.com:21`, identifiants en clair dans le rapport ; comportements : accès profils Outlook, consultation IP externe, usage de `SetThreadContext`.
 
-**Ce qu'on en retient :** `SetThreadContext`, jamais vu dans notre traçage statique (Parties 2-3), confirme que le hollowing classique se passe dans le payload final non extrait — referme la chaîne complète sans déchiffrement manuel.
+**Ce qu'on en retient :** `SetThreadContext`, jamais vu dans notre traçage statique (Parties 2-3), confirme que le hollowing classique se passe dans le payload final non extrait, referme la chaîne complète sans déchiffrement manuel.
 
 ### 3. Tentative de consultation UnpacMe (non aboutie)
 

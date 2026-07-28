@@ -35,13 +35,12 @@ Certificat WHQL valide (Aolian, probablement compromis)
 | Document | Contenu |
 |---|---|
 | [writeup.md](writeup.md) | Analyse technique complète en un seul document (19 sections) : `wskmon.sys` (enregistrement WFP, déclencheur réseau, HMAC/XOR, les trois commandes, le double mécanisme de résolution de thread, DriverUnload, contexte du certificat) puis `devhost.sys` (primitive R/W mémoire physique, candidat chargeur) et `844ljfpvz.sys` (composant minimal non déterminé), trouvés via le certificat partagé |
-| [02, Signalement MSRC](02-wskmon-msrc-report.md) | Rapport destiné au Microsoft Security Response Center : révocation du certificat, enquête sur le compte de soumission, preuve de réutilisation sur trois fichiers. Document séparé du writeup, c'est un livrable externe (lettre de divulgation), pas de la prose d'analyse |
-| [`poc_trigger.py`](poc_trigger.py) | Générateur de paquet de déclenchement (magic bytes + HMAC-SHA256 + XOR), reconstruit entièrement depuis le désassemblage, preuve d'exploitabilité pour le rapport MSRC. N'envoie rien par défaut ; nécessite une cible explicite + confirmation manuelle |
+| [`poc_trigger.py`](poc_trigger.py) | Générateur de paquet de déclenchement (magic bytes + HMAC-SHA256 + XOR), reconstruit entièrement depuis le désassemblage, preuve d'exploitabilité pour le signalement fait au Microsoft Security Response Center. N'envoie rien par défaut ; nécessite une cible explicite + confirmation manuelle |
 
 ## Ce que ce dossier ne contient pas (volontairement)
 
-Aucun binaire n'est versionné ici. L'échantillon est identifié par son hash SHA256 et récupérable sur [MalwareBazaar](https://bazaar.abuse.ch/) (tag `rootkit`). Le certificat étant encore valide au moment de la rédaction, aucune divulgation publique large (blog, réseaux sociaux) n'a été faite avant le signalement à Microsoft, voir la note de divulgation coordonnée ci-dessous.
+Aucun binaire n'est versionné ici. L'échantillon est identifié par son hash SHA256 et récupérable sur [MalwareBazaar](https://bazaar.abuse.ch/) (tag `rootkit`).
 
 ## Note sur la divulgation
 
-Le certificat documenté ici est **actif** au moment de cette analyse. Par cohérence avec les pratiques de divulgation coordonnée (signaler au vendeur avant publication large), ce dossier reste privé jusqu'à confirmation de la révocation par Microsoft ou un délai raisonnable sans réponse. La société dont le nom apparaît dans le certificat (Aolian) est très vraisemblablement une victime dans cette histoire, voir la section dédiée du writeup 01, et n'a pas vocation à être présentée publiquement comme responsable sans confirmation.
+Un signalement a été fait au Microsoft Security Response Center avant publication de cette analyse, conformément aux pratiques de divulgation coordonnée. La société dont le nom apparaît dans le certificat (Aolian) est très vraisemblablement une victime dans cette histoire, voir la section dédiée du writeup, et n'a pas vocation à être présentée publiquement comme responsable.

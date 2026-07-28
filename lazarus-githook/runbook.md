@@ -1,4 +1,4 @@
-# Runbook — Lazarus githook (DEV#POPPER)
+# Runbook : Lazarus githook (DEV#POPPER)
 
 Étapes reproductibles pour cette analyse. Nécessite Python 3.10+ et les samples dans le répertoire courant.
 
@@ -165,7 +165,7 @@ grep -A2 'def auto_up' cd3b606d*.py
 
 ---
 
-## 6b. Constantes RAT cd3b606d — mode root et version build
+## 6b. Constantes RAT cd3b606d : mode root et version build
 
 ```bash
 # Version build (format AAMMJJ)
@@ -188,7 +188,7 @@ grep -A8 "def ssh_inject" cd3b606d*.py
 # Vérification passive des IPs C2 (hors connexion directe)
 # Ne pas contacter ces IPs depuis un système de production
 
-# Via ThreatFox (aucun résultat pour 69.197.164.135 au 2026-07-20 — IP non signalée) :
+# Via ThreatFox (aucun résultat pour 69.197.164.135 au 2026-07-20, IP non signalée) :
 curl -s -X POST https://threatfox-api.abuse.ch/api/v1/ \
   -H 'Content-Type: application/json' \
   -d '{"query":"search_ioc","search_term":"69.197.164.135"}'
@@ -200,7 +200,7 @@ curl -s https://internetdb.shodan.io/69.197.164.135
 
 # WHOIS / ASN :
 whois 69.197.164.135
-# -> AS32097 WholeSale Internet, Inc. — Cloud Clusters Inc — Kansas City MO US
+# -> AS32097 WholeSale Internet, Inc., Cloud Clusters Inc, Kansas City MO US
 # -> CIDR 69.197.164.128/25
 
 # Via URLHaus (no key needed) :
@@ -214,11 +214,11 @@ curl -s -X POST https://mb-api.abuse.ch/api/v1/ \
   -d 'query=search_hash&hash=a3f413338c28c464f0c2b2369f1bc1b203261fae68c808b73c2df782dc4b1c27'
 ```
 
-**Résultat OSINT 69.197.164.135 :** IP absente de toutes les bases threat intel consultées. Infrastructure générique d'hébergement (Cloud Clusters Inc, Kansas City US). Port 2245 (canal RAT TCP) non visible depuis l'internet public — probablement limité par firewall aux connexions sortantes du malware. Trouver dans les logs réseau les connexions TCP sortantes persistantes sur ce port.
+**Résultat OSINT 69.197.164.135 :** IP absente de toutes les bases threat intel consultées. Infrastructure générique d'hébergement (Cloud Clusters Inc, Kansas City US). Port 2245 (canal RAT TCP) non visible depuis l'internet public, probablement limité par firewall aux connexions sortantes du malware. Trouver dans les logs réseau les connexions TCP sortantes persistantes sur ce port.
 
 ---
 
-## 7a. Stage 1 — analyse stealer crypto (second pass)
+## 7a. Stage 1 : analyse stealer crypto (second pass)
 
 Stage 1 contient un stealer complet ciblant les wallets crypto, révélé par un second pass de désobfuscation (182 alias locaux résolus).
 
@@ -260,7 +260,7 @@ grep "solana" tools/02e6fbf7_full_resolved.js
 grep -i "exodus" tools/02e6fbf7_full_resolved.js
 ```
 
-## 7b. Stage 3 — désobfuscation complète (second pass)
+## 7b. Stage 3 : désobfuscation complète (second pass)
 
 Le premier pass résout les 40 appels `Q(0xNN)` globaux. Un second pass résout les 98 alias locaux (`R`, `T`, `U`, `V`, `W`, `Z`, `a3`, `a4`, `a6`, `ac`, `af`) pour exposer complètement la logique de persistance.
 

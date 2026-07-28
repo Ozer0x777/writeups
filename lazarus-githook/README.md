@@ -1,4 +1,4 @@
-# Lazarus githook — DEV#POPPER / Contagious Interview
+# Lazarus githook : DEV#POPPER / Contagious Interview
 
 Analyse statique complète d'une chaîne d'infection git hook attribuée au groupe Lazarus (DEV#POPPER, Contagious Interview). Vecteur : dépôt git piégé, hook `post-checkout` ou `pre-commit` qui télécharge et exécute une chaîne JS multi-stages.
 
@@ -42,9 +42,9 @@ git hook (.sh)
 | IP C2 RAT TCP | `69.197.164.135:2245` |
 | CDN Windows | `pub-acf013a9b65140b7b58cc3c104ee7105.r2.dev` |
 | CDN Linux/macOS | `pub-06714264305c44ea94491c0c8d961a87.r2.dev` |
-| Payload (script) | `~/.viminf` (Node.js — exécuté par le mécanisme de persistance) |
+| Payload (script) | `~/.viminf` (Node.js, exécuté par le mécanisme de persistance) |
 | Persistance Linux | `~/.config/autostart/PyToolUpdater.desktop` |
 | Persistance macOS | `~/.zprofile` (bloc bootstrap marqué `# >>> PyToolUpdater bootstrap >>`) |
 | Persistance Windows | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\PyToolUpdater` |
 | Répertoire RAT | `~/.n2/` |
-| Répertoire stealer JS | `~/.n3/` (stage 1 — staging wallets crypto) |
+| Répertoire stealer JS | `~/.n3/` (stage 1, staging wallets crypto) |
